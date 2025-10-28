@@ -1,0 +1,116 @@
+# Default values for app.
+# This is a YAML-formatted file.
+
+# Application configuration
+app:
+  name: test-0003
+  version: "1.0.0"
+
+# Image configuration
+image:
+  repository: None
+  pullPolicy: IfNotPresent
+  tag: latest
+
+# Deployment configuration
+replicaCount: 1
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "traefik"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: test-0003.shareit.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: test-0003-tls
+      hosts:
+        - test-0003.shareit.com
+
+# Resource limits
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+# Health checks
+healthcheck:
+  enabled: true
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+# Environment variables
+env:
+  - name: ENVIRONMENT
+    value: "development"
+  - name: LOG_LEVEL
+    value: "info"
+
+# ConfigMap data
+configMap:
+  enabled: true
+  data:
+    app.properties: |
+      server.port=8080
+      management.endpoints.web.exposure.include=health,info,metrics
+
+# Secret data (base64 encoded values will be created)
+secret:
+  enabled: false
+  data: {}
+    # Example:
+    # database.password: "cGFzc3dvcmQ="
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 2000
+
+# Pod security context
+podSecurityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false

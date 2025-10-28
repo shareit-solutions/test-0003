@@ -1,0 +1,62 @@
+# Production environment specific values
+app:
+  name: test-0003-prd
+
+# Production ready resources
+replicaCount: 1
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+# Ingress for production
+ingress:
+  hosts:
+    - host: test-0003.shareit.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: test-0003-prd-tls
+      hosts:
+        - test-0003.shareit.com
+
+# Production environment variables
+env:
+  - name: ENVIRONMENT
+    value: "production"
+  - name: LOG_LEVEL
+    value: "warn"
+
+# Enable autoscaling in production
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# Production ConfigMap
+configMap:
+  data:
+    app.properties: |
+      server.port=8080
+      management.endpoints.web.exposure.include=health,info,metrics
+      logging.level.root=WARN
+
+# Production affinity - spread across nodes
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - test-0003
+        topologyKey: kubernetes.io/hostname

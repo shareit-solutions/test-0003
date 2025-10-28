@@ -1,0 +1,63 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: test-0003-prd
+  namespace: argocd
+  labels:
+    app: test-0003
+    environment: production
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  # Source configuration
+  source:
+    repoURL: git@github.com:shareit-solutions/test-0003
+    targetRevision: main  # Use main branch for production
+    path: charts/app
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-prd.yaml
+      parameters:
+        - name: app.name
+          value: test-0003-prd
+  
+  # Destination configuration
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: test-0003-prd
+  
+  # Sync policy - manual sync for production
+  syncPolicy:
+    automated:
+      prune: false  # Manual pruning for production
+      selfHeal: false  # Manual healing for production
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m0s
+  
+  # Revision history
+  revisionHistoryLimit: 10
+  
+  # Ignore differences
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      managedFieldsManagers:
+        - kube-controller-manager
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+      jqPathExpressions:
+        - .spec.targetRef.apiVersion
